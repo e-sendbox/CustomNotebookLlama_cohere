@@ -1,7 +1,5 @@
-import os
-import sys
+import asyncio
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from dotenv import load_dotenv
 from tools.cli.embedding_app import EmbeddingSetupApp
 from src.notebookllama.utils import create_llamacloud_client
@@ -46,7 +44,9 @@ def main():
             transform_config=transform_config,
         )
 
-        pipeline = client.pipelines.upsert_pipeline(request=pipeline_request)
+        pipeline = asyncio.run(
+            client.pipelines.upsert_pipeline(request=pipeline_request)
+        )
 
         with open(".env", "a") as f:
             f.write(f'\nLLAMACLOUD_PIPELINE_ID="{pipeline.id}"')

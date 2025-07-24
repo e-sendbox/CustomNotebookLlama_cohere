@@ -52,8 +52,12 @@ def create_llamacloud_client() -> AsyncLlamaCloud:
     Returns:
         AsyncLlamaCloud: Configured client instance
     """
-    config = get_llamacloud_config()
-    return AsyncLlamaCloud(**config)
+    token = os.getenv("LLAMACLOUD_API_KEY")
+    base_url = get_llamacloud_base_url()
+    if base_url:
+        return AsyncLlamaCloud(token=token, base_url=base_url)
+    else:
+        return AsyncLlamaCloud(token=token)
 
 
 def create_llama_extract_client() -> LlamaExtract:
@@ -63,8 +67,12 @@ def create_llama_extract_client() -> LlamaExtract:
     Returns:
         LlamaExtract: Configured client instance
     """
-    config = get_llamacloud_config()
-    return LlamaExtract(**config)
+    api_key = os.getenv("LLAMACLOUD_API_KEY")
+    base_url = get_llamacloud_base_url()
+    if base_url:
+        return LlamaExtract(api_key=api_key, base_url=base_url)
+    else:
+        return LlamaExtract(api_key=api_key)
 
 
 def create_llama_parse_client(result_type: str = "markdown") -> LlamaParse:
@@ -77,14 +85,12 @@ def create_llama_parse_client(result_type: str = "markdown") -> LlamaParse:
     Returns:
         LlamaParse: Configured client instance
     """
-    config = get_llamacloud_config()
-    base_url = config.get("base_url")
+    api_key = os.getenv("LLAMACLOUD_API_KEY")
+    base_url = get_llamacloud_base_url()
     if base_url:
-        return LlamaParse(
-            api_key=config["token"], result_type=result_type, base_url=base_url
-        )
+        return LlamaParse(api_key=api_key, result_type=result_type, base_url=base_url)
     else:
-        return LlamaParse(api_key=config["token"], result_type=result_type)
+        return LlamaParse(api_key=api_key, result_type=result_type)
 
 
 def create_llamacloud_index(api_key: str, pipeline_id: str) -> LlamaCloudIndex:

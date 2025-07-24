@@ -1,7 +1,8 @@
+import os
+import sys
 from dotenv import load_dotenv
 import pandas as pd
 import json
-import os
 import warnings
 from datetime import datetime
 
@@ -11,7 +12,9 @@ from llama_cloud_services.extract import SourceText
 from typing_extensions import override
 from typing import List, Tuple, Union, Optional, Dict
 
-from .utils import (
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from notebookllama.utils import (
     create_llamacloud_client,
     create_llama_extract_client,
     create_llama_parse_client,
