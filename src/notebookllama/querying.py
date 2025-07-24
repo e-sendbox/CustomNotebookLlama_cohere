@@ -3,9 +3,10 @@ import os
 
 from llama_index.core.query_engine import CitationQueryEngine
 from llama_index.core.base.response.schema import Response
-from llama_index.indices.managed.llama_cloud import LlamaCloudIndex
 from llama_index.llms.openai import OpenAIResponses
 from typing import Union, cast
+
+from .utils import create_llamacloud_index
 
 load_dotenv()
 
@@ -16,9 +17,10 @@ if (
 ):
     LLM = OpenAIResponses(model="gpt-4.1", api_key=os.getenv("OPENAI_API_KEY"))
     PIPELINE_ID = os.getenv("LLAMACLOUD_PIPELINE_ID")
-    RETR = LlamaCloudIndex(
+    index = create_llamacloud_index(
         api_key=os.getenv("LLAMACLOUD_API_KEY"), pipeline_id=PIPELINE_ID
-    ).as_retriever()
+    )
+    RETR = index.as_retriever()
     QE = CitationQueryEngine(
         retriever=RETR,
         llm=LLM,
