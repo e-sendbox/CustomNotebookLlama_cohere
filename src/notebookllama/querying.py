@@ -20,9 +20,12 @@ if (
 ):
     LLM = OpenAIResponses(model="gpt-4.1", api_key=os.getenv("OPENAI_API_KEY"))
     PIPELINE_ID = os.getenv("LLAMACLOUD_PIPELINE_ID")
-    index = create_llamacloud_index(
-        api_key=os.getenv("LLAMACLOUD_API_KEY"), pipeline_id=PIPELINE_ID
-    )
+    API_KEY = os.getenv("LLAMACLOUD_API_KEY")
+
+    if API_KEY is None or PIPELINE_ID is None:
+        raise ValueError("LLAMACLOUD_API_KEY and LLAMACLOUD_PIPELINE_ID must be set")
+
+    index = create_llamacloud_index(api_key=API_KEY, pipeline_id=PIPELINE_ID)
     RETR = index.as_retriever()
     QE = CitationQueryEngine(
         retriever=RETR,
