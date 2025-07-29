@@ -1,7 +1,12 @@
 import asyncio
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 
 from dotenv import load_dotenv
-from tools.cli.embedding_app import EmbeddingSetupApp
+from cli.embedding_app import EmbeddingSetupApp
 from src.notebookllama.utils import create_llamacloud_client
 
 from llama_cloud import (
