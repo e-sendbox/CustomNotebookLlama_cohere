@@ -65,10 +65,10 @@ Next, open the `.env` file and add your API keys:
 - `ELEVENLABS_API_KEY`: find it [on ElevenLabs Settings](https://elevenlabs.io/app/settings/api-keys)
 - `LLAMACLOUD_API_KEY`: find it [on LlamaCloud Dashboard](https://cloud.llamaindex.ai?utm_source=demo&utm_medium=notebookLM)
 
-> **🌍 Regional Support**: LlamaCloud operates in multiple regions. If you're using a non-US region, configure it in your `.env` file:
+> **🌍 Regional Support**: LlamaCloud operates in multiple regions. If you're using a European region, configure it in your `.env` file:
 >
+> - For **North America**: This is the default region - no configuration necesary.
 > - For **Europe (EU)**: Uncomment and set `LLAMACLOUD_REGION="eu"`
-> - For **North America (US)**: Either leave it commented or set `LLAMACLOUD_REGION="us"`
 
 **4. Activate the Virtual Environment**
 
