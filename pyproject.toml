@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
   "audioop-lts>=0.2.1",
+  "cohere>=5.15.0",
   "elevenlabs>=2.5.0",
   "fastmcp>=2.9.2",
   "ffprobe>=0.5",
@@ -19,6 +20,7 @@ dependencies = [
   "llama-index-embeddings-huggingface-api>=0.3.1",
   "llama-index-embeddings-openai>=0.3.1",
   "llama-index-indices-managed-llama-cloud>=0.6.11",
+  "llama-index-llms-cohere>=0.5.0",
   "llama-index-llms-openai>=0.4.7",
   "llama-index-observability-otel>=0.1.1",
   "llama-index-tools-mcp>=0.2.5",
@@ -36,7 +38,7 @@ dependencies = [
   "pyvis>=0.3.2",
   "randomname>=0.2.1",
   "streamlit>=1.46.1",
-  "textual>=3.7.1"
+  "textual>=3.7.1",
 ]
 
 [tool.mypy]

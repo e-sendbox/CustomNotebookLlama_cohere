@@ -6,6 +6,9 @@ from workflows.resource import Resource
 from llama_index.tools.mcp import BasicMCPClient
 from typing import Annotated, List, Union
 
+import logging
+logger = logging.getLogger("notebookllama.workflow")
+
 MCP_CLIENT = BasicMCPClient(command_or_url="http://localhost:8000/mcp", timeout=120)
 
 
@@ -45,9 +48,15 @@ class NotebookLMWorkflow(Workflow):
         ctx.write_event_to_stream(
             ev=ev,
         )
-        result = await mcp_client.call_tool(
-            tool_name="process_file_tool", arguments={"filename": ev.file}
-        )
+        logger.debug(f"extractfiledata: Starting with event={ev}")
+        try:
+            result = await mcp_client.call_tool(
+                tool_name="process_file_tool", arguments={"filename": ev.file}
+            )
+            logger.debug(f"extractfiledata: Result={result}")
+        except Exception as e:
+            logger.exception(f"extractfiledata: Exception: {e}")
+
         split_result = result.content[0].text.split("\n%separator%\n")
         json_data = split_result[0]
         md_text = split_result[1]
@@ -76,10 +85,16 @@ class NotebookLMWorkflow(Workflow):
         ctx.write_event_to_stream(
             ev=ev,
         )
-        result = await mcp_client.call_tool(
-            tool_name="get_mind_map_tool",
-            arguments={"summary": ev.summary, "highlights": ev.highlights},
-        )
+        logger.debug(f"extractfiledata: Starting with event={ev}")
+        try:
+            result = await mcp_client.call_tool(
+                tool_name="get_mind_map_tool",
+                arguments={"summary": ev.summary, "highlights": ev.highlights},
+            )
+            logger.debug(f"extractfiledata: Result={result}")
+        except Exception as e:
+            logger.exception(f"extractfiledata: Exception: {e}")
+
         if result is not None:
             return NotebookOutputEvent(
                 mind_map=result.content[0].text,

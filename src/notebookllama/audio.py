@@ -12,7 +12,8 @@ from typing_extensions import Self
 from typing import List, Literal, Optional, AsyncIterator
 from pydantic import BaseModel, ConfigDict, model_validator, Field
 from llama_index.core.llms import ChatMessage
-from llama_index.llms.openai import OpenAIResponses
+# from llama_index.llms.openai import OpenAIResponses
+from llama_index.llms.cohere import Cohere
 
 logger = logging.getLogger(__name__)
 
@@ -362,9 +363,9 @@ load_dotenv()
 
 PODCAST_GEN: Optional[PodcastGenerator]
 
-if os.getenv("ELEVENLABS_API_KEY", None) and os.getenv("OPENAI_API_KEY", None):
-    SLLM = OpenAIResponses(
-        model="gpt-4.1", api_key=os.getenv("OPENAI_API_KEY")
+if os.getenv("ELEVENLABS_API_KEY", None) and os.getenv("COHERE_API_KEY", None):
+    SLLM = Cohere(
+        model="command-a-03-2025", api_key=os.getenv("COHERE_API_KEY")
     ).as_structured_llm(MultiTurnConversation)
     EL_CLIENT = AsyncElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
     PODCAST_GEN = PodcastGenerator(llm=SLLM, client=EL_CLIENT)

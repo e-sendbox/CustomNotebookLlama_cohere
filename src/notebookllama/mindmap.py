@@ -8,7 +8,11 @@ from typing import List, Union
 
 from pyvis.network import Network
 from llama_index.core.llms import ChatMessage
-from llama_index.llms.openai import OpenAIResponses
+# from llama_index.llms.openai import OpenAIResponses
+from llama_index.llms.cohere import Cohere
+import logging
+logger = logging.getLogger("notebookllama.mindmap")
+
 
 
 class Node(BaseModel):
@@ -68,12 +72,13 @@ class MindMapCreationFailedWarning(Warning):
     """A warning returned if the mind map creation failed"""
 
 
-if os.getenv("OPENAI_API_KEY", None):
-    LLM = OpenAIResponses(model="gpt-4.1", api_key=os.getenv("OPENAI_API_KEY"))
+if os.getenv("COHERE_API_KEY", None):
+    LLM = Cohere(model="command-a-03-2025", api_key=os.getenv("COHERE_API_KEY"))
     LLM_STRUCT = LLM.as_structured_llm(MindMap)
 
 
 async def get_mind_map(summary: str, highlights: List[str]) -> Union[str, None]:
+    logger.debug(f"get_mind_map: summary={summary}, highlights={highlights}")
     try:
         keypoints = "\n- ".join(highlights)
         messages = [
@@ -100,10 +105,12 @@ async def get_mind_map(summary: str, highlights: List[str]) -> Union[str, None]:
             net.add_edge(source=edge["from_id"], to=edge["to_id"])
         name = str(uuid.uuid4())
         net.save_graph(name + ".html")
+        logger.debug(f"get_mind_map: response={response}")
         return name + ".html"
     except Exception as e:
         warnings.warn(
             message=f"An error occurred during the creation of the mind map: {e}",
             category=MindMapCreationFailedWarning,
         )
+        logger.exception(f"get_mind_map: Exception: {e}")
         return None

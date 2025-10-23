@@ -12,6 +12,9 @@ from llama_cloud_services.extract import SourceText
 from typing_extensions import override
 from typing import List, Tuple, Union, Optional, Dict
 
+import logging
+logger = logging.getLogger("notebookllama.processing")
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from notebookllama.utils import (
@@ -128,20 +131,31 @@ async def parse_file(
 async def process_file(
     filename: str,
 ) -> Union[Tuple[str, None], Tuple[None, None], Tuple[str, str]]:
-    with open(filename, "rb") as f:
-        file = await CLIENT.files.upload_file(upload_file=f)
-    files = [{"file_id": file.id}]
-    await CLIENT.pipelines.add_files_to_pipeline_api(
-        pipeline_id=PIPELINE_ID, request=files
-    )
-    text, _, _ = await parse_file(file_path=filename)
-    if text is None:
-        return None, None
-    extraction_output = await EXTRACT_AGENT.aextract(
-        files=SourceText(text_content=text, filename=file.name)
-    )
-    if extraction_output:
-        return json.dumps(extraction_output.data, indent=4), text
+    logger.debug(f"process_file: filename={filename}")
+    try:
+        with open(filename, "rb") as f:
+            file = await CLIENT.files.upload_file(upload_file=f)
+        files = [{"file_id": file.id}]
+        await CLIENT.pipelines.add_files_to_pipeline_api(
+            pipeline_id=PIPELINE_ID, request=files
+        )
+        text, _, _ = await parse_file(file_path=filename)
+        if text is None:
+            logger.error(f"process_file: No text extracted for {filename}")
+            return None, None
+        logger.debug(f"process_file: extracted text: {text[:200]}")
+        extraction_output = await EXTRACT_AGENT.aextract(
+            files=SourceText(text_content=text, filename=file.name)
+        )
+        logger.debug(f"process_file: extraction_output: {extraction_output}")
+        if extraction_output:
+            return json.dumps(extraction_output.data, indent=4), text
+        else:
+            logger.error(f"process_file: extraction_output is None or empty for file {filename}")
+            return None, None
+    except Exception as e:
+        logger.exception(f"process_file: Exception occurred: {e}")
+    logger.error(f"process_file: Failed to process file, returning None, None for {filename}")
     return None, None
 
 

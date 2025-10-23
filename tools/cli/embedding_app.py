@@ -22,17 +22,17 @@ class EmbeddingSetupApp(App):
 
     def handle_default_setup(self) -> None:
         from llama_index.embeddings.openai import OpenAIEmbedding
-        from llama_cloud import PipelineCreateEmbeddingConfig_OpenaiEmbedding
+        from llama_cloud import PipelineCreateEmbeddingConfig_CohereEmbedding
 
-        self.config.provider = "OpenAI"
-        self.config.api_key = os.getenv("OPENAI_API_KEY")
-        self.config.model = "text-embedding-3-small"
+        self.config.provider = "Cohere"
+        self.config.apikey = os.getenv("COHERE_API_KEY")
+        self.config.model = "embed-multilingual-v3.0"
 
         embed_model = OpenAIEmbedding(
             model=self.config.model, api_key=self.config.api_key
         )
-        embedding_config = PipelineCreateEmbeddingConfig_OpenaiEmbedding(
-            type="OPENAI_EMBEDDING",
+        embedding_config = PipelineCreateEmbeddingConfig_CohereEmbedding(
+            type="COHERE_EMBEDDING",
             component=embed_model,
         )
         self.config = embedding_config

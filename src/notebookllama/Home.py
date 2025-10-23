@@ -6,9 +6,11 @@ import tempfile as temp
 from dotenv import load_dotenv
 import sys
 import time
+import randomname
 import streamlit.components.v1 as components
 
 from pathlib import Path
+from documents import ManagedDocument, DocumentManager
 from audio import PODCAST_GEN, PodcastConfig
 from typing import Tuple
 from workflow import NotebookLMWorkflow, FileInputEvent, NotebookOutputEvent
@@ -17,6 +19,11 @@ from llama_index.observability.otel import LlamaIndexOpenTelemetry
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
     OTLPSpanExporter,
 )
+import logging
+logger = logging.getLogger("notebookllama.ui")
+logging.basicConfig(level=logging.DEBUG)
+
+
 
 load_dotenv()
 
@@ -29,11 +36,13 @@ instrumentor = LlamaIndexOpenTelemetry(
     span_exporter=span_exporter,
     debug=True,
 )
+engine_url = f"postgresql+psycopg2://{os.getenv('pgql_user')}:{os.getenv('pgql_psw')}@localhost:5432/{os.getenv('pgql_db')}"
 sql_engine = OtelTracesSqlEngine(
-    engine_url=f"postgresql+psycopg2://{os.getenv('pgql_user')}:{os.getenv('pgql_psw')}@localhost:5432/{os.getenv('pgql_db')}",
+    engine_url=engine_url,
     table_name="agent_traces",
     service_name="agent.traces",
 )
+document_manager = DocumentManager(engine_url=engine_url)
 
 WF = NotebookLMWorkflow(timeout=600)
 
@@ -44,18 +53,24 @@ def read_html_file(file_path: str) -> str:
         return f.read()
 
 
-async def run_workflow(file: io.BytesIO) -> Tuple[str, str, str, str, str]:
+async def run_workflow(
+    file: io.BytesIO, document_title: str
+) -> Tuple[str, str, str, str, str]:
+    logger.debug(f"run_workflow: document_title={document_title}")
     # Create temp file with proper Windows handling
     with temp.NamedTemporaryFile(suffix=".pdf", delete=False) as fl:
         content = file.getvalue()
         fl.write(content)
         fl.flush()  # Ensure data is written
         temp_path = fl.name
+    logger.debug(f"run_workflow: temp_path={temp_path}, file_size={len(content)}")
 
     try:
         st_time = int(time.time() * 1000000)
         ev = FileInputEvent(file=temp_path)
+        logger.debug(f"run_workflow: start_event ev={ev}")
         result: NotebookOutputEvent = await WF.run(start_event=ev)
+        logger.debug(f"run_workflow: workflow result={result}")
 
         q_and_a = ""
         for q, a in zip(result.questions, result.answers):
@@ -63,6 +78,7 @@ async def run_workflow(file: io.BytesIO) -> Tuple[str, str, str, str, str]:
         bullet_points = "## Bullet Points\n\n- " + "\n- ".join(result.highlights)
 
         mind_map = result.mind_map
+        logger.debug(f"run_workflow: mind_map={mind_map}")
         if Path(mind_map).is_file():
             mind_map = read_html_file(mind_map)
             try:
@@ -71,7 +87,24 @@ async def run_workflow(file: io.BytesIO) -> Tuple[str, str, str, str, str]:
                 pass  # File might be locked on Windows
 
         end_time = int(time.time() * 1000000)
+        logger.debug(f"run_workflow: times: start={st_time}, end={end_time}")
         sql_engine.to_sql_database(start_time=st_time, end_time=end_time)
+        document_manager.put_documents(
+            [
+                ManagedDocument(
+                    document_name=document_title,
+                    content=result.md_content,
+                    summary=result.summary,
+                    q_and_a=q_and_a,
+                    mindmap=mind_map,
+                    bullet_points=bullet_points,
+                )
+            ]
+        )
+        logger.debug(f"run_workflow: DocumentManager put completed")
+        logger.debug(
+            f"run_workflow: return lengths: md_content={len(result.md_content) if result.md_content else 'None'}, summary={len(result.summary) if result.summary else 'None'}, q_and_a={len(q_and_a)}, bullet_points={len(bullet_points)}, mind_map={len(mind_map) if mind_map else 'None'}"
+        )
         return result.md_content, result.summary, q_and_a, bullet_points, mind_map
 
     finally:
@@ -85,7 +118,7 @@ async def run_workflow(file: io.BytesIO) -> Tuple[str, str, str, str, str]:
                 pass  # Give up if still locked
 
 
-def sync_run_workflow(file: io.BytesIO):
+def sync_run_workflow(file: io.BytesIO, document_title: str):
     try:
         # Try to use existing event loop
         loop = asyncio.get_event_loop()
@@ -94,15 +127,21 @@ def sync_run_workflow(file: io.BytesIO):
             import concurrent.futures
 
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, run_workflow(file))
+                future = executor.submit(
+                    asyncio.run, run_workflow(file, document_title)
+                )
                 return future.result()
         else:
-            return loop.run_until_complete(run_workflow(file))
+            return loop.run_until_complete(run_workflow(file, document_title))
     except RuntimeError:
         # No event loop exists, create one
         if sys.platform == "win32":
             asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-        return asyncio.run(run_workflow(file))
+        res = asyncio.run(run_workflow(file, document_title))
+
+    if not res or not all(res):
+        logger.error(f"sync_run_workflow: Got empty or None response: {res}")
+    return res
 
 
 async def create_podcast(file_content: str, config: PodcastConfig = None):
@@ -132,24 +171,43 @@ st.sidebar.info("To switch to the Document Chat, select it from above!🔺")
 st.markdown("---")
 st.markdown("## NotebookLlaMa - Home🦙")
 
+# Initialize session state BEFORE creating the text input
+if "workflow_results" not in st.session_state:
+    st.session_state.workflow_results = None
+if "document_title" not in st.session_state:
+    st.session_state.document_title = randomname.get_name(
+        adj=("music_theory", "geometry", "emotions"), noun=("cats", "food")
+    )
+
+# Use session_state as the value and update it when changed
+document_title = st.text_input(
+    label="Document Title",
+    value=st.session_state.document_title,
+    key="document_title_input",
+)
+
+# Update session state when the input changes
+if document_title != st.session_state.document_title:
+    st.session_state.document_title = document_title
+
 file_input = st.file_uploader(
     label="Upload your source PDF file!", accept_multiple_files=False
 )
-
-# Add this after your existing code, before the st.title line:
-
-# Initialize session state
-if "workflow_results" not in st.session_state:
-    st.session_state.workflow_results = None
 
 if file_input is not None:
     # First button: Process Document
     if st.button("Process Document", type="primary"):
         with st.spinner("Processing document... This may take a few minutes."):
             try:
+                logger.debug("UI: Processing document started")
                 md_content, summary, q_and_a, bullet_points, mind_map = (
-                    sync_run_workflow(file_input)
+                    sync_run_workflow(file_input, st.session_state.document_title)
                 )
+                logger.debug(
+                    f"UI: Processing result lengths: md_content={len(md_content) if md_content else 'None'}, summary={len(summary) if summary else 'None'}, q_and_a={len(q_and_a)}, bullet_points={len(bullet_points)}, mind_map={len(mind_map) if mind_map else 'None'}")
+                if not md_content or not summary:
+                    logger.error("UI: Empty md_content or summary received after processing!")
+
                 st.session_state.workflow_results = {
                     "md_content": md_content,
                     "summary": summary,
@@ -159,6 +217,7 @@ if file_input is not None:
                 }
                 st.success("Document processed successfully!")
             except Exception as e:
+                logger.exception(f"UI error while processing document: {e}")
                 st.error(f"Error processing document: {str(e)}")
 
     # Display results if available

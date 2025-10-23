@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.13"
 
 [[package]]
@@ -1382,6 +1382,19 @@ wheels = [
 ]
 
 [[package]]
+name = "llama-index-llms-cohere"
+version = "0.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cohere" },
+    { name = "llama-index-core" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1c/03/df15b714db00b35c1fdf9f25a859742ff814e62a652daf5473c8e619a79b/llama_index_llms_cohere-0.5.0.tar.gz", hash = "sha256:9cf7976db95726ecece9a7eaf00e8f0c2c6c69f3a6a294db3d43c3ced7b2b926", size = 12452, upload-time = "2025-05-30T00:08:51.346Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a0/5f/74d5d591b93960577a0e2e2c8e60e8eb36a6c59f14ea6f6a027cd9b667fb/llama_index_llms_cohere-0.5.0-py3-none-any.whl", hash = "sha256:5e6d6de1b0be857ac25523cb08c53bb636c7c94afb060f6ca73135e55ce8dd73", size = 12736, upload-time = "2025-05-30T00:08:50.254Z" },
+]
+
+[[package]]
 name = "llama-index-llms-openai"
 version = "0.4.7"
 source = { registry = "https://pypi.org/simple" }
@@ -1748,6 +1761,7 @@ version = "0.3.1"
 source = { virtual = "." }
 dependencies = [
     { name = "audioop-lts" },
+    { name = "cohere" },
     { name = "elevenlabs" },
     { name = "fastmcp" },
     { name = "ffprobe" },
@@ -1761,6 +1775,7 @@ dependencies = [
     { name = "llama-index-embeddings-huggingface-api" },
     { name = "llama-index-embeddings-openai" },
     { name = "llama-index-indices-managed-llama-cloud" },
+    { name = "llama-index-llms-cohere" },
     { name = "llama-index-llms-openai" },
     { name = "llama-index-observability-otel" },
     { name = "llama-index-tools-mcp" },
@@ -1783,6 +1798,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "audioop-lts", specifier = ">=0.2.1" },
+    { name = "cohere", specifier = ">=5.15.0" },
     { name = "elevenlabs", specifier = ">=2.5.0" },
     { name = "fastmcp", specifier = ">=2.9.2" },
     { name = "ffprobe", specifier = ">=0.5" },
@@ -1796,6 +1812,7 @@ requires-dist = [
     { name = "llama-index-embeddings-huggingface-api", specifier = ">=0.3.1" },
     { name = "llama-index-embeddings-openai", specifier = ">=0.3.1" },
     { name = "llama-index-indices-managed-llama-cloud", specifier = ">=0.6.11" },
+    { name = "llama-index-llms-cohere", specifier = ">=0.5.0" },
     { name = "llama-index-llms-openai", specifier = ">=0.4.7" },
     { name = "llama-index-observability-otel", specifier = ">=0.1.1" },
     { name = "llama-index-tools-mcp", specifier = ">=0.2.5" },
